@@ -75,18 +75,21 @@ class DFEditor(QWidget):
     df["Miles"] = pd.to_numeric(df["Miles"], downcast="float")
     df["Daily Miles"] = pd.to_numeric(df["Daily Miles"], downcast="float")
 
-
     # calculate the running mileage totals between each point
     # first row is just the same value as in the adjacent column
     df.iloc[0,3] = df.iloc[0,2]
 
     # the rest of the rows are calculated by adding the previous row's value with the current row's value
-    #df.iloc[1,3] = df.iloc[0,3] + df.iloc[1,2]
     for i in range(1,df.shape[0]):
         df.iloc[i,3] = df.iloc[i-1,3] + df.iloc[i,2]
 
+        # don't display nan for rows after the first row; replace those with empty strings
+        df.iloc[i,0] = ""
+
     # round the "Daily Miles" to 1 decimal place
     df["Daily Miles"] = np.round(df["Daily Miles"], decimals=1)
+
+
 
     def __init__(self):
         super().__init__()
@@ -99,30 +102,35 @@ class DFEditor(QWidget):
         mainLayout.addWidget(self.table)
 
         # add print button
-        button_print = QPushButton('Display DF')
+        button_print = QPushButton('Clear Campsites')
         button_print.setStyleSheet('font-size: 30px')
 
         # associate button click with method to print
-        button_print.clicked.connect(self.print_DF_Values)
+        button_print.clicked.connect(self.reset)
 
         mainLayout.addWidget(button_print)
 
         # do similar steps as above for other buttons
-        button_export = QPushButton('Export to CSV file')
-        button_export.setStyleSheet('font-size: 30px')
-        button_export.clicked.connect(self.export_to_csv)
-        mainLayout.addWidget(button_export)
-
         button_recalc = QPushButton('Recalculate Daily Mileage')
         button_recalc.setStyleSheet('font-size: 30px')
         button_recalc.clicked.connect(self.recalculate_miles)
         mainLayout.addWidget(button_recalc)
 
+        button_export = QPushButton('Export to CSV file')
+        button_export.setStyleSheet('font-size: 30px')
+        button_export.clicked.connect(self.export_to_csv)
+        mainLayout.addWidget(button_export)
+
         self.setLayout(mainLayout)
 
 
-    def print_DF_Values(self):
-        print(self.table.df)
+    def reset(self):
+        # clear out the "Campsite" column of any values
+        #print(self.table.df)
+        self.table.df["Campsite"] = ""
+
+        # refresh the widget
+        self.repaint()
 
     def export_to_csv(self):
         self.table.df.to_csv('Data export.csv', index=False)
@@ -176,7 +184,8 @@ class DFEditor(QWidget):
                 # round to 1 decimal place
                 self.table.df["Daily Miles"] = np.round(self.table.df["Daily Miles"], decimals=1)
 
-
+        # refresh the widget so it displays the changes on the screen
+        self.repaint()
 
 if __name__ == '__main__':
     print("running main")
