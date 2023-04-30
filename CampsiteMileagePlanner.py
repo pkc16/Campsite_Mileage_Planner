@@ -90,7 +90,6 @@ class DFEditor(QWidget):
     df["Daily Miles"] = np.round(df["Daily Miles"], decimals=1)
 
 
-
     def __init__(self):
         super().__init__()
         self.resize(1200,800)
@@ -157,6 +156,7 @@ class DFEditor(QWidget):
             if numCampsiteRows > 1:
                 nextCampsiteRow = listCampsiteRows[currentListIndex + 1]
                 initialRow = currentRow
+
                 for i in range(currentRow, nextCampsiteRow + 1):
                     if i == initialRow:
                         segmentMiles = self.table.df.iloc[currentRow, 2]
@@ -169,11 +169,13 @@ class DFEditor(QWidget):
                         currentRow = currentRow + 1
 
                 numCampsiteRows = numCampsiteRows - 1
+                currentListIndex = currentListIndex + 1
 
             else:
                 # only 1 remaining campsite
                 # calculate the daily miles for the next day
                 segmentMiles = self.table.df.iloc[currentRow, 2]
+                print('segmentMiles = ' + str(segmentMiles))
                 self.table.df.iloc[currentRow, 3] = segmentMiles
 
                 currentRow = currentRow + 1
