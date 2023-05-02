@@ -49,17 +49,10 @@ class TableWidget(QTableWidget):
     def updateDF(self, row, column):
         text = self.item(row, column).text()
         self.df.iloc[row, column] = text
+        print('updateDF running; text = ' + text)
 
 
 class DFEditor(QWidget):
-    # data = {
-    #     'Col X': ['trailhead','JCT 1','JCT 2','snake creek'],
-    #     'Col Y': ['JCT 1', 'JCT 2', 'snake creek', 'campsite'],
-    #     'Col Z': [10,20,30,40]
-    # }
-    #
-    # df = pd.DataFrame(data)
-    #df = pd.DataFrame()
 
     # get data; prompt user to select the file which has the data
     # os.chdir("C:\\")
@@ -128,8 +121,14 @@ class DFEditor(QWidget):
         #print(self.table.df)
         self.table.df["Campsite"] = ""
 
+        # clear out the dataframe of all data
+        self.table.df = pd.DataFrame()
+
+        # reload the data
+        self.table.df = pd.read_excel(self.path, engine='openpyxl')
+
         # refresh the widget
-        self.repaint()
+        #self.table.repaint()
 
     def export_to_csv(self):
         self.table.df.to_csv('Data export.csv', index=False)
@@ -138,56 +137,103 @@ class DFEditor(QWidget):
     def recalculate_miles(self):
         # recalculate daily miles
 
-        # get the indices of the rows which have an "X" for campsite
-        idx_array = np.where(self.table.df["Campsite"] == "X")
+        # get the indices of the rows which have an "x" for campsite
+        idx_array = np.where(self.table.df["Campsite"] == "x")
         listCampsiteRows = self.table.df.iloc[idx_array].index.tolist()
         numCampsiteRows = len(listCampsiteRows)
         print(listCampsiteRows)
-        print("size of list = " +  str(numCampsiteRows))
+        print("size of list = " + str(numCampsiteRows))
         print("len of df = " + str(len(self.table.df.index)))
 
         currentListIndex = 0
         segmentMiles = 0.0
-        for i in listCampsiteRows:
-            print(str(i))
-            currentRow = i + 1
 
-            # get the row index of the next campsite
-            if numCampsiteRows > 1:
-                nextCampsiteRow = listCampsiteRows[currentListIndex + 1]
-                initialRow = currentRow
+        currentRow = 0
+        for campsiteRow in listCampsiteRows:
+            print("iteration i = " + str(campsiteRow))
 
-                for i in range(currentRow, nextCampsiteRow + 1):
-                    if i == initialRow:
-                        segmentMiles = self.table.df.iloc[currentRow, 2]
-                        self.table.df.iloc[currentRow, 3] = segmentMiles
-                        currentRow = currentRow + 1
+            if len(listCampsiteRows) == 1:
+                # calculate mileages from first row to row of the campsite
+                # first row is just the value from the Miles column
+                self.table.df.iloc[0, 3] = self.table.df.iloc[0, 2]
 
-                    else:
-                        segmentMiles = self.table.df.iloc[currentRow - 1, 3] + self.table.df.iloc[currentRow, 2]
-                        self.table.df.iloc[currentRow, 3] = self.table.df.iloc[currentRow - 1, 3] + self.table.df.iloc[currentRow, 2]
-                        currentRow = currentRow + 1
+                # the rest of the rows are calculated by adding the previous row's value  in "Daily Miles" column with the current row's value in "Miles" column
+                for j in range(1, campsiteRow):
+                    self.table.df.iloc[j, 3] = self.table.df.iloc[j - 1, 3] + self.table.df.iloc[j, 2]
 
-                numCampsiteRows = numCampsiteRows - 1
-                currentListIndex = currentListIndex + 1
+                # now calculate the mileages for the last day
+                self.table.df.iloc[campsiteRow + 1, 3] = self.table.df.iloc[campsiteRow + 1, 2]
 
-            else:
-                # only 1 remaining campsite
-                # calculate the daily miles for the next day
-                segmentMiles = self.table.df.iloc[currentRow, 2]
-                print('segmentMiles = ' + str(segmentMiles))
-                self.table.df.iloc[currentRow, 3] = segmentMiles
-
-                currentRow = currentRow + 1
-                for i in range(currentRow, self.table.df.shape[0]):
-                    self.table.df.iloc[currentRow, 3] = self.table.df.iloc[currentRow - 1, 3] + self.table.df.iloc[currentRow, 2]
-                    currentRow = currentRow + 1
+                for k in range(campsiteRow + 2, self.table.df.shape[0]):
+                    self.table.df.iloc[k, 3] = self.table.df.iloc[k - 1, 3] + self.table.df.iloc[k, 2]
 
                 # round to 1 decimal place
                 self.table.df["Daily Miles"] = np.round(self.table.df["Daily Miles"], decimals=1)
 
-        # refresh the widget so it displays the changes on the screen
-        self.repaint()
+
+
+
+
+
+
+    # def recalculate_miles(self):
+    #     # recalculate daily miles
+    #
+    #     # get the indices of the rows which have an "x" for campsite
+    #     idx_array = np.where(self.table.df["Campsite"] == "x")
+    #     listCampsiteRows = self.table.df.iloc[idx_array].index.tolist()
+    #     numCampsiteRows = len(listCampsiteRows)
+    #     print(listCampsiteRows)
+    #     print("size of list = " +  str(numCampsiteRows))
+    #     print("len of df = " + str(len(self.table.df.index)))
+    #
+    #     currentListIndex = 0
+    #     segmentMiles = 0.0
+    #     for i in listCampsiteRows:
+    #         print("iteration i = " + str(i))
+    #         currentRow = i + 1
+    #
+    #         # get the row index of the next campsite
+    #         if numCampsiteRows > 1:
+    #             nextCampsiteRow = listCampsiteRows[currentListIndex + 1]
+    #             initialRow = currentRow
+    #
+    #             for i in range(currentRow, nextCampsiteRow + 1):
+    #                 if i == initialRow:
+    #                     # get the miles of the starting row for this range as the basis of calculations
+    #                     segmentMiles = self.table.df.iloc[currentRow, 2]
+    #                     self.table.df.iloc[currentRow, 3] = segmentMiles
+    #                     currentRow = currentRow + 1
+    #
+    #                 else:
+    #                     segmentMiles = self.table.df.iloc[currentRow - 1, 3] + self.table.df.iloc[currentRow, 2]
+    #                     self.table.df.iloc[currentRow, 3] = self.table.df.iloc[currentRow - 1, 3] + self.table.df.iloc[currentRow, 2]
+    #                     currentRow = currentRow + 1
+    #
+    #             numCampsiteRows = numCampsiteRows - 1
+    #             currentListIndex = currentListIndex + 1
+    #
+    #         else:
+    #             # need to calculate the previous day's miles in case campsites got changed from initial user input
+    #
+    #
+    #             # calculate the daily miles for the last day
+    #             segmentMiles = self.table.df.iloc[currentRow, 2]
+    #             print('segmentMiles = ' + str(segmentMiles))
+    #             self.table.df.iloc[currentRow, 3] = segmentMiles
+    #
+    #             currentRow = currentRow + 1
+    #             for i in range(currentRow, self.table.df.shape[0]):
+    #                 self.table.df.iloc[currentRow, 3] = self.table.df.iloc[currentRow - 1, 3] + self.table.df.iloc[currentRow, 2]
+    #                 currentRow = currentRow + 1
+    #
+    #             # round to 1 decimal place
+    #             self.table.df["Daily Miles"] = np.round(self.table.df["Daily Miles"], decimals=1)
+    #
+    #     # refresh the widget so it displays the changes on the screen
+    #     self.table.repaint()
+
+
 
 if __name__ == '__main__':
     print("running main")
