@@ -140,38 +140,34 @@ class DFEditor(QWidget):
         # get the indices of the rows which have an "x" for campsite
         idx_array = np.where(self.table.df["Campsite"] == "x")
         listCampsiteRows = self.table.df.iloc[idx_array].index.tolist()
-        numCampsiteRows = len(listCampsiteRows)
-        print(listCampsiteRows)
-        print("size of list = " + str(numCampsiteRows))
-        print("len of df = " + str(len(self.table.df.index)))
 
-        currentListIndex = 0
-        segmentMiles = 0.0
+        for index, campsiteRow in enumerate(listCampsiteRows):
+            print("iteration = " + str(index) + "; campsiteRow = " + str(campsiteRow))
 
-        currentRow = 0
-        for campsiteRow in listCampsiteRows:
-            print("iteration i = " + str(campsiteRow))
+            if campsiteRow == listCampsiteRows[0]:
+                # calculate mileages from very first row to row of the campsite
+                self.calculate_miles_in_segment(0, campsiteRow)
 
-            if len(listCampsiteRows) == 1:
-                # calculate mileages from first row to row of the campsite
-                # first row is just the value from the Miles column
-                self.table.df.iloc[0, 3] = self.table.df.iloc[0, 2]
+            else:
+                # calculate mileages from starting row (which is 1 greater than the previous campsite row) to row of the campsite
+                # (increment the endRow so that range function in called function will calculate for the end row)
+                self.calculate_miles_in_segment(listCampsiteRows[index - 1] + 1, campsiteRow + 1)
 
-                # the rest of the rows are calculated by adding the previous row's value  in "Daily Miles" column with the current row's value in "Miles" column
-                for j in range(1, campsiteRow):
-                    self.table.df.iloc[j, 3] = self.table.df.iloc[j - 1, 3] + self.table.df.iloc[j, 2]
+        # now calculate the mileages for the last day
+        self.calculate_miles_in_segment(listCampsiteRows[-1] + 1, self.table.df.shape[0])
 
-                # now calculate the mileages for the last day
-                self.table.df.iloc[campsiteRow + 1, 3] = self.table.df.iloc[campsiteRow + 1, 2]
-
-                for k in range(campsiteRow + 2, self.table.df.shape[0]):
-                    self.table.df.iloc[k, 3] = self.table.df.iloc[k - 1, 3] + self.table.df.iloc[k, 2]
-
-                # round to 1 decimal place
-                self.table.df["Daily Miles"] = np.round(self.table.df["Daily Miles"], decimals=1)
+        # round to 1 decimal place
+        self.table.df["Daily Miles"] = np.round(self.table.df["Daily Miles"], decimals=1)
 
 
+    def calculate_miles_in_segment(self, startRow, endRow):
+        # calculate mileages from starting row to row of the campsite
+        # starting row is just the value from the Miles column
+        self.table.df.iloc[startRow, 3] = self.table.df.iloc[startRow, 2]
 
+        # the rest of the rows are calculated by adding the previous row's value  in "Daily Miles" column with the current row's value in "Miles" column
+        for i in range(startRow + 1, endRow):
+            self.table.df.iloc[i, 3] = self.table.df.iloc[i - 1, 3] + self.table.df.iloc[i, 2]
 
 
 
