@@ -31,7 +31,7 @@ class TableWidget(QTableWidget):
         self.setRowCount(nRows)
 
         # set up the on-screen display of the table
-        self.setHorizontalHeaderLabels(('Start', 'End', 'Miles', 'Daily Miles','Campsite?'))
+        self.setHorizontalHeaderLabels(('Start', 'End', 'Miles', 'Daily Miles','Campsite? (mark with "x")'))
         self.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
@@ -49,7 +49,6 @@ class TableWidget(QTableWidget):
     def updateDF(self, row, column):
         text = self.item(row, column).text()
         self.df.iloc[row, column] = text
-        print('updateDF running; text = ' + text)
 
 
 class DFEditor(QWidget):
@@ -82,10 +81,41 @@ class DFEditor(QWidget):
     # round the "Daily Miles" to 1 decimal place
     df["Daily Miles"] = np.round(df["Daily Miles"], decimals=1)
 
+    df_copy = df.copy()
+
 
     def __init__(self):
         super().__init__()
         self.resize(1200,800)
+
+        # # get data; prompt user to select the file which has the data
+        # # os.chdir("C:\\")
+        # os.chdir("C:\\Users\\Inspiron3650\\Documents\\PythonScripts\\TrailCampPlanner")
+        # path = filedialog.askopenfilename(initialdir="C:", title="Select the file which has the trail data")
+        # df = pd.read_excel(path, engine='openpyxl')
+        #
+        # # add column to use to mark for potential campsites
+        # df.insert(3, 'Daily Miles', '')
+        # df.insert(4, 'Campsite', '')
+        #
+        # # convert numeric columns to numeric datatype
+        # df["Miles"] = pd.to_numeric(df["Miles"], downcast="float")
+        # df["Daily Miles"] = pd.to_numeric(df["Daily Miles"], downcast="float")
+        #
+        # # calculate the running mileage totals between each point
+        # # first row is just the same value as in the adjacent column
+        # df.iloc[0, 3] = df.iloc[0, 2]
+        #
+        # # the rest of the rows are calculated by adding the previous row's value with the current row's value
+        # for i in range(1, df.shape[0]):
+        #     df.iloc[i, 3] = df.iloc[i - 1, 3] + df.iloc[i, 2]
+        #
+        #     # don't display nan for rows after the first row; replace those with empty strings
+        #     df.iloc[i, 0] = ""
+        #
+        # # round the "Daily Miles" to 1 decimal place
+        # df["Daily Miles"] = np.round(df["Daily Miles"], decimals=1)
+
 
         mainLayout = QVBoxLayout()
 
@@ -115,20 +145,39 @@ class DFEditor(QWidget):
 
         self.setLayout(mainLayout)
 
+    def load_data(self):
+        # get data; prompt user to select the file which has the data
+        # os.chdir("C:\\")
+        os.chdir("C:\\Users\\Inspiron3650\\Documents\\PythonScripts\\TrailCampPlanner")
+        path = filedialog.askopenfilename(initialdir="C:", title="Select the file which has the trail data")
+        df = pd.read_excel(path, engine='openpyxl')
+
+        # add column to use to mark for potential campsites
+        df.insert(3, 'Daily Miles', '')
+        df.insert(4, 'Campsite', '')
+
+        # convert numeric columns to numeric datatype
+        df["Miles"] = pd.to_numeric(df["Miles"], downcast="float")
+        df["Daily Miles"] = pd.to_numeric(df["Daily Miles"], downcast="float")
+
+        # calculate the running mileage totals between each point
+        # first row is just the same value as in the adjacent column
+        df.iloc[0, 3] = df.iloc[0, 2]
+
+        # the rest of the rows are calculated by adding the previous row's value with the current row's value
+        for i in range(1, df.shape[0]):
+            df.iloc[i, 3] = df.iloc[i - 1, 3] + df.iloc[i, 2]
+
+            # don't display nan for rows after the first row; replace those with empty strings
+            df.iloc[i, 0] = ""
+
+        # round the "Daily Miles" to 1 decimal place
+        df["Daily Miles"] = np.round(df["Daily Miles"], decimals=1)
+
 
     def reset(self):
-        # clear out the "Campsite" column of any values
-        #print(self.table.df)
-        self.table.df["Campsite"] = ""
-
-        # clear out the dataframe of all data
-        self.table.df = pd.DataFrame()
-
-        # reload the data
-        self.table.df = pd.read_excel(self.path, engine='openpyxl')
-
-        # refresh the widget
-        #self.table.repaint()
+        # set the dataframe back to the original state when it was first loaded from Excel
+        self.table.df = self.df_copy
 
     def export_to_csv(self):
         self.table.df.to_csv('Data export.csv', index=False)
@@ -142,8 +191,6 @@ class DFEditor(QWidget):
         listCampsiteRows = self.table.df.iloc[idx_array].index.tolist()
 
         for index, campsiteRow in enumerate(listCampsiteRows):
-            print("iteration = " + str(index) + "; campsiteRow = " + str(campsiteRow))
-
             if campsiteRow == listCampsiteRows[0]:
                 # calculate mileages from very first row to row of the campsite
                 self.calculate_miles_in_segment(0, campsiteRow)
@@ -165,80 +212,23 @@ class DFEditor(QWidget):
         # starting row is just the value from the Miles column
         self.table.df.iloc[startRow, 3] = self.table.df.iloc[startRow, 2]
 
-        # the rest of the rows are calculated by adding the previous row's value  in "Daily Miles" column with the current row's value in "Miles" column
+        # the rest of the rows are calculated by adding the previous row's value in "Daily Miles" column with the current row's value in "Miles" column
         for i in range(startRow + 1, endRow):
             self.table.df.iloc[i, 3] = self.table.df.iloc[i - 1, 3] + self.table.df.iloc[i, 2]
 
 
 
 
-    # def recalculate_miles(self):
-    #     # recalculate daily miles
-    #
-    #     # get the indices of the rows which have an "x" for campsite
-    #     idx_array = np.where(self.table.df["Campsite"] == "x")
-    #     listCampsiteRows = self.table.df.iloc[idx_array].index.tolist()
-    #     numCampsiteRows = len(listCampsiteRows)
-    #     print(listCampsiteRows)
-    #     print("size of list = " +  str(numCampsiteRows))
-    #     print("len of df = " + str(len(self.table.df.index)))
-    #
-    #     currentListIndex = 0
-    #     segmentMiles = 0.0
-    #     for i in listCampsiteRows:
-    #         print("iteration i = " + str(i))
-    #         currentRow = i + 1
-    #
-    #         # get the row index of the next campsite
-    #         if numCampsiteRows > 1:
-    #             nextCampsiteRow = listCampsiteRows[currentListIndex + 1]
-    #             initialRow = currentRow
-    #
-    #             for i in range(currentRow, nextCampsiteRow + 1):
-    #                 if i == initialRow:
-    #                     # get the miles of the starting row for this range as the basis of calculations
-    #                     segmentMiles = self.table.df.iloc[currentRow, 2]
-    #                     self.table.df.iloc[currentRow, 3] = segmentMiles
-    #                     currentRow = currentRow + 1
-    #
-    #                 else:
-    #                     segmentMiles = self.table.df.iloc[currentRow - 1, 3] + self.table.df.iloc[currentRow, 2]
-    #                     self.table.df.iloc[currentRow, 3] = self.table.df.iloc[currentRow - 1, 3] + self.table.df.iloc[currentRow, 2]
-    #                     currentRow = currentRow + 1
-    #
-    #             numCampsiteRows = numCampsiteRows - 1
-    #             currentListIndex = currentListIndex + 1
-    #
-    #         else:
-    #             # need to calculate the previous day's miles in case campsites got changed from initial user input
-    #
-    #
-    #             # calculate the daily miles for the last day
-    #             segmentMiles = self.table.df.iloc[currentRow, 2]
-    #             print('segmentMiles = ' + str(segmentMiles))
-    #             self.table.df.iloc[currentRow, 3] = segmentMiles
-    #
-    #             currentRow = currentRow + 1
-    #             for i in range(currentRow, self.table.df.shape[0]):
-    #                 self.table.df.iloc[currentRow, 3] = self.table.df.iloc[currentRow - 1, 3] + self.table.df.iloc[currentRow, 2]
-    #                 currentRow = currentRow + 1
-    #
-    #             # round to 1 decimal place
-    #             self.table.df["Daily Miles"] = np.round(self.table.df["Daily Miles"], decimals=1)
-    #
-    #     # refresh the widget so it displays the changes on the screen
-    #     self.table.repaint()
-
 
 
 if __name__ == '__main__':
-    print("running main")
     root = Tk()
     root.withdraw()
 
     app = QApplication(sys.argv)
 
-    demo = DFEditor()
-    demo.show()
+    window = DFEditor()
+    window.setWindowTitle("Trail Campsite Planner")
+    window.show()
 
     sys.exit(app.exec_())
