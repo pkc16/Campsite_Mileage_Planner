@@ -138,6 +138,11 @@ class DFEditor(QWidget):
         button_recalc.clicked.connect(self.recalculate_miles)
         mainLayout.addWidget(button_recalc)
 
+        button_reverse = QPushButton('Reverse Trail')
+        button_reverse.setStyleSheet('font-size: 30px')
+        button_reverse.clicked.connect(self.reverse_trail)
+        mainLayout.addWidget(button_reverse)
+
         button_export = QPushButton('Export to CSV file')
         button_export.setStyleSheet('font-size: 30px')
         button_export.clicked.connect(self.export_to_csv)
@@ -182,6 +187,26 @@ class DFEditor(QWidget):
     def export_to_csv(self):
         self.table.df.to_csv('Data export.csv', index=False)
         print('CSV file exported.')
+
+    def reverse_trail(self):
+        # reverse the dataframe
+        self.table.df = self.table.df.iloc[::-1]
+
+        # now calculate the mileages for each leg
+        self.table.df.iloc[0, 3] = self.table.df.iloc[0, 2]
+        for i in range(1, self.table.df.shape[0]):
+            self.table.df.iloc[i, 3] = self.table.df.iloc[i - 1, 3] + self.table.df.iloc[i, 2]
+
+            # don't display nan for rows after the first row; replace those with empty strings
+            self.table.df.iloc[i, 0] = ""
+
+        # now make the start column for first row the same as the original dataframe, and shift the end sites up by 1 for each row
+        self.table.df.iloc[0,0] = self.df_copy.iloc[0,0]
+        for i in range(0, self.table.df.shape[0] - 1):
+            self.table.df.iloc[i,1] = self.table.df.iloc[i+1,1]
+
+        # replace the last end site with the starting site to complete the loop
+        self.table.df.iloc[self.table.df.shape[0] - 1,1] = self.table.df.iloc[0,0]
 
     def recalculate_miles(self):
         # recalculate daily miles
