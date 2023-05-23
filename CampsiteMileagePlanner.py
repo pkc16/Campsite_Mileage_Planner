@@ -48,8 +48,6 @@ class TableWidget(QTableWidget):
                 # print(f'init function:  i={i}; j={j}; value = {self.df.iloc[i, j]}')
                 self.setItem(i,j, QTableWidgetItem(str(self.df.iloc[i,j])))
 
-
-
         # associate any changes user made to the table data
         self.cellChanged[int, int].connect(self.updateDF)
 
@@ -59,7 +57,6 @@ class TableWidget(QTableWidget):
 
 
 class DFEditor(QWidget):
-
     # get data; prompt user to select the file which has the data
     # os.chdir("C:\\")
     os.chdir("C:\\Users\\Inspiron3650\\Documents\\PythonScripts\\TrailCampPlanner")
@@ -154,8 +151,31 @@ class DFEditor(QWidget):
 
 
     def reset(self):
+        # START HERE: THIS FUNCTION ISN'T RELOADING ORIGINAL MILEAGES ON SUBSEQUENT CLICKS
+        self.df_copy["Campsite"] = ""
+
         # set the dataframe back to the original state when it was first loaded from Excel
-        self.table.df = self.df_copy
+        #self.table.df = self.df_copy
+        self.table.df["Daily Miles"] = self.df_copy["Daily Miles"]
+        self.table.df["Campsite"] = self.df_copy["Campsite"]
+
+        # # convert numeric columns to numeric datatype
+        # self.table.df["Miles"] = pd.to_numeric(self.table.df["Miles"], downcast="float")
+        # self.table.df["Daily Miles"] = pd.to_numeric(self.table.df["Daily Miles"], downcast="float")
+
+        # round the mileages
+        self.table.df["Miles"] = self.table.df["Miles"].astype(float).round(1)
+        self.table.df["Daily Miles"] = self.table.df["Daily Miles"].astype(float).round(1)
+
+        # update the data in the widget so the changes display on the screen
+        for i in range(self.table.rowCount()):
+            for j in range(1, self.table.columnCount()):
+                # clear out any campsites
+                if self.table.df.iloc[i,j] == "x":
+                    self.table.df.iloc[i,j] = ""
+
+                self.table.setItem(i, j, QTableWidgetItem(str(self.table.df.iloc[i, j])))
+
 
     def export_to_csv(self):
         self.table.df.to_csv('Data export.csv', index=False)
@@ -203,6 +223,7 @@ class DFEditor(QWidget):
         # now calculate the mileages for the last day
         self.calculate_miles_in_segment(listCampsiteRows[-1] + 1, self.table.df.shape[0])
 
+        # round the mileages
         self.table.df["Miles"] = self.table.df["Miles"].astype(float).round(1)
         self.table.df["Daily Miles"] = self.table.df["Daily Miles"].astype(float).round(1)
 
@@ -211,18 +232,17 @@ class DFEditor(QWidget):
             for j in range(1, self.table.columnCount()-1):
                 self.table.setItem(i, j, QTableWidgetItem(str(self.table.df.iloc[i,j])))
 
+        #self.table.df["Daily Miles"] = self.table.df["Daily Miles"].astype(float).round(1)
+
 
     def calculate_miles_in_segment(self, startRow, endRow):
         # calculate mileages from starting row to row of the campsite
         # starting row is just the value from the Miles column
-        self.table.df.iloc[startRow,2] = self.table.df.iloc[startRow,1]
+        self.table.df.iloc[startRow,2] = float(self.table.df.iloc[startRow,1])
 
         # the rest of the rows are calculated by adding the previous row's value in "Daily Miles" column with the current row's value in "Miles" column
         for i in range(startRow + 1, endRow):
-            self.table.df.iloc[i, 2] = self.table.df.iloc[i - 1, 2] + self.table.df.iloc[i, 1]
-
-
-
+            self.table.df.iloc[i, 2] = float(self.table.df.iloc[i - 1, 2]) + float(self.table.df.iloc[i, 1])
 
 
 
