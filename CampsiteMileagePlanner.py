@@ -151,17 +151,14 @@ class DFEditor(QWidget):
 
 
     def reset(self):
-        # START HERE: THIS FUNCTION ISN'T RELOADING ORIGINAL MILEAGES ON SUBSEQUENT CLICKS
+        #START HERE:  THIS FUNCTION DOESN'T WORK PROPERLY IF TRYING TO RESET A REVERSED TRAIL
+
+        # set the dataframe back to the data when it was originally loaded from Excel
         self.df_copy["Campsite"] = ""
 
         # set the dataframe back to the original state when it was first loaded from Excel
-        #self.table.df = self.df_copy
         self.table.df["Daily Miles"] = self.df_copy["Daily Miles"]
         self.table.df["Campsite"] = self.df_copy["Campsite"]
-
-        # # convert numeric columns to numeric datatype
-        # self.table.df["Miles"] = pd.to_numeric(self.table.df["Miles"], downcast="float")
-        # self.table.df["Daily Miles"] = pd.to_numeric(self.table.df["Daily Miles"], downcast="float")
 
         # round the mileages
         self.table.df["Miles"] = self.table.df["Miles"].astype(float).round(1)
@@ -182,8 +179,8 @@ class DFEditor(QWidget):
         print('CSV file exported.')
 
     def reverse_trail(self):
-        # change the direction of the trail (reverse the sites in the dataframe)
-        self.table.df = self.df_copy.iloc[::-1]
+        # change the direction of the trail (reverse the sites in the dataframe, but keep the original indices)
+        self.table.df = self.df_copy.iloc[::-1].reset_index(drop = True)
 
         # take the mileage from the last row (should be 0) and make it the mileage for the first row and shift rest of mileages down 1 row; do the shift first
         self.table.df['Miles'] = self.table.df['Miles'].shift(1)
@@ -199,8 +196,14 @@ class DFEditor(QWidget):
         for i in range(1, self.table.df.shape[0]):
             self.table.df.iloc[i,2] = self.table.df.iloc[i - 1,2] + self.table.df.iloc[i,1]
 
-        # round the "Daily Miles" to 1 decimal place
-        self.table.df["Daily Miles"] = np.round(self.table.df["Daily Miles"], decimals=1)
+        # round the mileages
+        self.table.df["Miles"] = self.table.df["Miles"].astype(float).round(1)
+        self.table.df["Daily Miles"] = self.table.df["Daily Miles"].astype(float).round(1)
+
+        # update the data in the widget so the changes display on the screen
+        for i in range(self.table.rowCount()):
+            for j in range(0, self.table.columnCount() - 1):
+                self.table.setItem(i, j, QTableWidgetItem(str(self.table.df.iloc[i, j])))
 
 
     def recalculate_miles(self):
@@ -209,6 +212,7 @@ class DFEditor(QWidget):
         # get the indices of the rows which have an "x" for campsite
         idx_array = np.where(self.table.df["Campsite"] == "x")
         listCampsiteRows = self.table.df.iloc[idx_array].index.tolist()
+        print(listCampsiteRows)
 
         for index, campsiteRow in enumerate(listCampsiteRows):
             if campsiteRow == listCampsiteRows[0]:
@@ -231,8 +235,6 @@ class DFEditor(QWidget):
         for i in range(self.table.rowCount()):
             for j in range(1, self.table.columnCount()-1):
                 self.table.setItem(i, j, QTableWidgetItem(str(self.table.df.iloc[i,j])))
-
-        #self.table.df["Daily Miles"] = self.table.df["Daily Miles"].astype(float).round(1)
 
 
     def calculate_miles_in_segment(self, startRow, endRow):
