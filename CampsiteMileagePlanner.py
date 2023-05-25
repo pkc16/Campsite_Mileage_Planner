@@ -151,13 +151,11 @@ class DFEditor(QWidget):
 
 
     def reset(self):
-        #START HERE:  THIS FUNCTION DOESN'T WORK PROPERLY IF TRYING TO RESET A REVERSED TRAIL
+        # set the dataframe back to the original state when it was loaded from Excel
 
-        # set the dataframe back to the data when it was originally loaded from Excel
-        self.df_copy["Campsite"] = ""
-
-        # set the dataframe back to the original state when it was first loaded from Excel
         self.table.df["Daily Miles"] = self.df_copy["Daily Miles"]
+        self.table.df["Miles"] = self.df_copy["Miles"]
+        self.table.df["Site"] = self.df_copy["Site"]
         self.table.df["Campsite"] = self.df_copy["Campsite"]
 
         # round the mileages
@@ -166,7 +164,7 @@ class DFEditor(QWidget):
 
         # update the data in the widget so the changes display on the screen
         for i in range(self.table.rowCount()):
-            for j in range(1, self.table.columnCount()):
+            for j in range(0, self.table.columnCount()):
                 # clear out any campsites
                 if self.table.df.iloc[i,j] == "x":
                     self.table.df.iloc[i,j] = ""
@@ -212,7 +210,6 @@ class DFEditor(QWidget):
         # get the indices of the rows which have an "x" for campsite
         idx_array = np.where(self.table.df["Campsite"] == "x")
         listCampsiteRows = self.table.df.iloc[idx_array].index.tolist()
-        print(listCampsiteRows)
 
         for index, campsiteRow in enumerate(listCampsiteRows):
             if campsiteRow == listCampsiteRows[0]:
