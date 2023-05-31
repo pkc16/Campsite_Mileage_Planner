@@ -209,6 +209,10 @@ class DFEditor(QWidget):
 
         # get the indices of the rows which have an "x" for campsite
         idx_array = np.where(self.table.df["Campsite"] == "x")
+        if not np.any(idx_array):
+            print("Mark at least 1 campsite before performing a recalcuation.")
+            return
+
         listCampsiteRows = self.table.df.iloc[idx_array].index.tolist()
 
         for index, campsiteRow in enumerate(listCampsiteRows):
@@ -248,7 +252,6 @@ class DFEditor(QWidget):
 if __name__ == '__main__':
     root = tkinter.Tk()
     root.withdraw()
-
 
     app = QApplication(sys.argv)
 
