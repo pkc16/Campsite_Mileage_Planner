@@ -58,8 +58,7 @@ class TableWidget(QTableWidget):
 
 class DFEditor(QWidget):
     # get data; prompt user to select the file which has the data
-    # os.chdir("C:\\")
-    os.chdir("C:\\Users\\Inspiron3650\\Documents\\PythonScripts\\TrailCampPlanner")
+    os.chdir("C:\\")
     path = filedialog.askopenfilename(initialdir="C:", title="Select the file which has the trail data")
     df = pd.read_excel(path, engine='openpyxl')
 
@@ -122,32 +121,6 @@ class DFEditor(QWidget):
         mainLayout.addWidget(button_export)
 
         self.setLayout(mainLayout)
-
-    # def load_data(self):
-    #     # get data; prompt user to select the file which has the data
-    #     # os.chdir("C:\\")
-    #     os.chdir("C:\\Users\\Inspiron3650\\Documents\\PythonScripts\\TrailCampPlanner")
-    #     path = filedialog.askopenfilename(initialdir="C:", title="Select the file which has the trail data")
-    #     df = pd.read_excel(path, engine='openpyxl')
-    #
-    #     # add column to use to mark for potential campsites
-    #     df.insert(2, 'Daily Miles', '')
-    #     df.insert(3, 'Campsite', '')
-    #
-    #     # convert numeric columns to numeric datatype
-    #     df["Miles"] = pd.to_numeric(df["Miles"], downcast="float")
-    #     df["Daily Miles"] = pd.to_numeric(df["Daily Miles"], downcast="float")
-    #
-    #     # calculate the running mileage totals between each point
-    #     # first row is just the same value as in the adjacent column
-    #     df.iloc[0,2] = df.iloc[0,1]
-    #
-    #     # the rest of the rows are calculated by adding the previous row's value with the current row's value
-    #     for i in range(1, df.shape[0]):
-    #         df.iloc[i,2] = df.iloc[i - 1,2] + df.iloc[i,1]
-    #
-    #     # round the "Daily Miles" to 1 decimal place
-    #     df["Daily Miles"] = np.round(df["Daily Miles"], decimals=1)
 
 
     def reset(self):
