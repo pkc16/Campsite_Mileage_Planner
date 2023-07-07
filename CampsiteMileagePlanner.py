@@ -146,7 +146,8 @@ class DFEditor(QWidget):
 
 
     def export_to_csv(self):
-        self.table.df.to_csv('Data export.csv', index=False)
+        directoryName = os.path.dirname(self.path)
+        self.table.df.to_csv(directoryName + "\\Data_export.csv", index=False)
         print('CSV file exported.')
 
     def reverse_trail(self):
